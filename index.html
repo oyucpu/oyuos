@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="OyuOS: escritorio virtual en HTML, CSS y JavaScript."><link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🖥️</text></svg>"><title>OyuOS — Virtual Desktop</title>
+<style>
+:root{--accent:#54a6ff;--glass:#111b2ddd;--panel:#101827;--border:#34445c;--text:#edf4ff}
+*{box-sizing:border-box}
+body{margin:0;font:14px system-ui;background:#101827;color:var(--text);overflow:hidden}
+button,input,textarea{font:inherit}
+button{cursor:pointer;color:inherit;background:#24344b;border:1px solid #40516a;border-radius:7px;padding:8px 11px}
+button:hover{background:#344a68}
+#desktop{height:100dvh;position:relative;overflow:hidden;background:radial-gradient(ellipse at 20% 20%,#1c4971,transparent 48%),radial-gradient(ellipse at 80% 80%,#27356a,transparent 50%),#101827}
+#desktop:before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(125deg,transparent 40%,#ffffff05 40%,transparent 65%)}
+#icons{position:absolute;top:18px;left:14px;display:grid;grid-template-columns:85px;gap:8px}
+.icon{border:1px solid transparent;background:transparent;width:80px;height:82px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-size:12px;text-align:center}
+.icon:hover{background:#ffffff15;border-color:#ffffff25}
+.icon span{font-size:28px}
+#welcome{position:absolute;right:30px;top:35px;text-align:right;pointer-events:none}
+#welcome h1{font-size:clamp(26px,5vw,54px);margin:0;letter-spacing:-2px}
+#welcome p{color:#b8d5f4}
+#taskbar{position:absolute;bottom:0;left:0;right:0;height:55px;background:#0b1322eF;backdrop-filter:blur(18px);border-top:1px solid #ffffff1c;display:flex;align-items:center;padding:7px 12px;gap:8px;z-index:9999}
+#start{font-size:20px;background:var(--accent);border:0}
+#taskapps{display:flex;gap:5px;flex:1;overflow:auto}
+.taskapp{white-space:nowrap}
+#clock{font-variant-numeric:tabular-nums;text-align:right;min-width:85px}
+#startmenu{position:absolute;bottom:63px;left:10px;width:min(340px,calc(100vw - 20px));background:var(--glass);backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:14px;padding:15px;z-index:9998;box-shadow:0 15px 60px #0008}
+#startmenu h3{margin:0 0 12px}
+#startmenu .apps{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.window{position:absolute;top:90px;left:clamp(15px,15vw,220px);width:min(700px,calc(100vw - 30px));height:min(490px,calc(100dvh - 125px));min-width:270px;min-height:210px;display:flex;flex-direction:column;background:#111a29f5;border:1px solid #526580;border-radius:12px;box-shadow:0 18px 65px #0008;overflow:hidden}
+.titlebar{height:43px;flex-shrink:0;background:#202e42;display:flex;align-items:center;justify-content:space-between;padding:0 10px;cursor:move;user-select:none;gap:10px}
+.titlebar strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.winbuttons{display:flex;gap:5px}
+.winbuttons button{padding:3px 9px}
+.winbody{padding:15px;overflow:auto;flex:1;min-height:0}
+.window textarea{width:100%;height:100%;resize:none;background:#09111e;color:#d9e8ff;border:1px solid var(--border);padding:12px;border-radius:7px}
+.window input{background:#09111e;color:var(--text);border:1px solid var(--border);border-radius:7px;padding:9px;max-width:100%}
+.termout{font:13px/1.8 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+.termline{display:flex;gap:8px;font:13px monospace;margin-top:8px}
+.termline input{flex:1;min-width:0}
+.filelist{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
+.fileitem{background:#1d2b40;border-radius:8px;padding:13px;text-align:center;overflow-wrap:anywhere}
+.calc{max-width:300px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.calc input{grid-column:1/-1;width:100%;text-align:right;font-size:24px}
+.calc button{padding:15px 5px}
+.muted{color:#aabbd1}
+.hidden{display:none!important}
+@media(max-width:600px){#welcome{right:15px;top:20px}.window{left:10px!important;top:70px!important;width:calc(100vw - 20px)!important;height:calc(100dvh - 140px)!important}.icon{height:72px}#taskbar{padding:6px}}
+.window{resize:both}.taskapp.on{background:#3b5a82;border-color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.todo{display:flex;gap:6px;align-items:center;margin:6px 0}.todo span{flex:1;overflow-wrap:anywhere}.todo.done span{text-decoration:line-through;opacity:.6}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="desktop">
+  <div id="icons">
+    <button class="icon" data-app="files"><span>📁</span>Archivos</button>
+    <button class="icon" data-app="terminal"><span>⌨️</span>Terminal</button>
+    <button class="icon" data-app="notes"><span>📝</span>Notas</button>
+    <button class="icon" data-app="editor"><span>💻</span>Editor</button>
+    <button class="icon" data-app="calc"><span>🧮</span>Calculadora</button>
+    <button class="icon" data-app="about"><span>👨‍💻</span>Sobre mí</button>
+  </div>
+
+  <div id="welcome">
+    <h1>OyuOS<span style="color:var(--accent)">.</span></h1>
+    <p>Virtual Desktop Environment</p>
+  </div>
+
+  <div id="startmenu" class="hidden">
+    <h3>Aplicaciones</h3>
+    <div class="apps">
+      <button data-app="files">📁 Explorador</button>
+      <button data-app="terminal">⌨️ Terminal</button>
+      <button data-app="notes">📝 Bloc de notas</button>
+      <button data-app="editor">💻 Editor</button>
+      <button data-app="calc">🧮 Calculadora</button>
+      <button data-app="monitor">📊 Sistema</button>
+      <button data-app="todo">✅ Tareas</button>
+      <button data-app="settings">⚙️ Ajustes</button>
+      <button data-app="about">👨‍💻 Sobre mí</button>
+    </div>
+    <p class="muted"><small>Atajos: Alt+T terminal · Alt+N notas · Alt+E editor · Alt+C calculadora · Alt+M sistema · Alt+W cerrar ventana · Doble clic en la barra: maximizar</small></p>
+  </div>
+
+  <div id="taskbar">
+    <button id="start">⊞</button>
+    <div id="taskapps"></div>
+    <div id="clock"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+const $=id=>document.getElementById(id);
+const desktop=$("desktop");
+let z=10, nextId=1;
+const boot=Date.now();
+const esc=x=>String(x).replace(/[&<>"']/g,c=>"&#"+c.charCodeAt(0)+";");
+function fmtUp(){const t=Math.floor((Date.now()-boot)/1000);return Math.floor(t/60)+" min "+t%60+" s";}
+const windows=new Map();
+
+const defaultFiles=[
+ {name:"Bienvenido.txt",type:"Texto",content:"Bienvenido a OyuOS.\nTu escritorio virtual personal."},
+ {name:"portfolio.html",type:"HTML",content:"<!-- Proyecto de portfolio de Antonio -->"},
+ {name:"proyectos",type:"Carpeta",content:""},
+ {name:"notas.txt",type:"Texto",content:"Ideas para nuevos proyectos informáticos."}
+];
+let fileData;try{fileData=JSON.parse(localStorage.getItem("oyuOS_files"));}catch{}
+if(!Array.isArray(fileData))fileData=defaultFiles;
+const saveFiles=()=>localStorage.setItem("oyuOS_files",JSON.stringify(fileData));
+
+const apps={
+ files:{title:"Explorador de archivos",icon:"📁",render:()=>`
+   <p class="muted">Archivos virtuales de demostración</p>
+   <div class="filelist" id="flist"></div>
+   <p><button id="newfile">＋ Nuevo archivo</button> <button id="openfile" disabled>Abrir en editor</button> <button id="delfile" disabled>Eliminar</button></p><pre id="filepreview" class="termout"></pre>`},
+ terminal:{title:"Terminal",icon:"⌨️",render:()=>`
+   <div id="termout" class="termout">OyuOS Terminal v1.1\nEscribe help para ver los comandos.\n</div>
+   <form id="termform" class="termline"><span>oyu@oyuOS:~$</span><input id="terminput" autocomplete="off" autofocus aria-label="Comando"><button>↵</button></form>`},
+ notes:{title:"Bloc de notas",icon:"📝",render:()=>`
+   <p class="muted">Las notas se guardan en este navegador.</p>
+   <textarea id="notesarea" placeholder="Escribe tus notas..."></textarea>
+   <button id="savenotes" style="margin-top:8px">Guardar notas</button><span id="notesstatus" class="muted"></span>`},
+ editor:{title:"Editor de código",icon:"💻",render:()=>`
+   <p class="muted">Editor local de texto. No ejecuta automáticamente el código.</p>
+   <textarea id="editorarea" spellcheck="false" style="font-family:monospace" placeholder="Escribe HTML, CSS o JavaScript..."></textarea>
+   <div style="margin-top:8px"><button id="savefile">Guardar en archivo virtual</button> <button id="runprev">Vista previa HTML</button> <button id="downloadcode">Descargar</button></div>
+   <iframe id="prevframe" sandbox class="hidden" title="Vista previa" style="width:100%;height:260px;margin-top:8px;background:#fff;border:0;border-radius:7px"></iframe>`},
+ calc:{title:"Calculadora",icon:"🧮",render:()=>`
+   <div class="calc"><input id="calcdisplay" value="0" readonly aria-label="Resultado">
+   ${["7","8","9","÷","4","5","6","×","1","2","3","−","C","0",".","+","(",")","⌫","="].map(k=>`<button data-calc="${k}">${k}</button>`).join("")}</div>
+   <p class="muted">Operaciones matemáticas básicas.</p>`},
+ todo:{title:"Tareas",icon:"✅",render:()=>`
+   <form id="todoform" class="termline"><input id="todoinput" placeholder="Nueva tarea..." aria-label="Nueva tarea" autocomplete="off"><button>Añadir</button></form><div id="todolist"></div>`},
+ monitor:{title:"Monitor del sistema",icon:"📊",render:()=>`
+   <h2>Estado del escritorio virtual</h2>
+   <p>Aplicaciones abiertas: <strong id="openwindows">0</strong></p>
+   <p>Almacenamiento de notas: <strong id="notesize">0</strong> caracteres</p>
+   <p>Tiempo activo: <strong id="uptime"></strong> · Conexión: <strong id="net"></strong></p>
+   <p>Núcleos lógicos: <strong>${navigator.hardwareConcurrency||"?"}</strong> · Pantalla: <strong>${screen.width}×${screen.height}</strong></p>
+   <p>Hora local: <strong id="sysclock"></strong></p>
+   <p class="muted">Los indicadores son del entorno web simulado. No representan mediciones reales de CPU o RAM.</p>`},
+ settings:{title:"Configuración",icon:"⚙️",render:()=>`
+   <h3>Apariencia</h3><label>Color de acento <input type="color" id="accent" value="#54a6ff"></label>
+   <p><button id="wallpaper">Cambiar fondo</button></p>
+   <p><button id="resetstyle">Restaurar apariencia</button></p>`},
+ about:{title:"Sobre mí",icon:"👨‍💻",render:()=>`
+   <h2>Antonio Oyuela</h2><p>Técnico microinformático · Sistemas y redes · Desarrollo web</p>
+   <p>Este escritorio virtual forma parte de mi portfolio tecnológico.</p>
+   <h3>Áreas de interés</h3><p>Hardware · Diagnóstico · Linux · HTML · CSS · JavaScript · Ciberseguridad</p>
+   <p class="muted">Personaliza esta ventana con tu CV, formación y proyectos.</p>
+   <button id="openportfolio">Abrir mi portfolio</button>`}
+};
+
+function openApp(name){
+  if(!apps[name])return;
+  $("startmenu").classList.add("hidden");
+  const existing=[...windows.values()].find(w=>w.name===name);
+  if(existing){if(existing.el.classList.contains("hidden"))existing.el.classList.remove("hidden");focusWin(existing.id);return;}
+
+  const id=nextId++;
+  const el=document.createElement("section");
+  el.className="window";
+  el.dataset.id=id;
+  el.style.zIndex=++z;
+  el.style.left=(Math.min(220+windows.size*24,Math.max(15,innerWidth-300)))+"px";
+  el.style.top=(Math.min(85+windows.size*22,Math.max(65,innerHeight-250)))+"px";
+  el.innerHTML=`
+    <div class="titlebar"><strong>${apps[name].icon} ${apps[name].title}</strong>
+      <div class="winbuttons"><button data-min>—</button><button data-max>□</button><button data-close>×</button></div>
+    </div><div class="winbody">${apps[name].render()}</div>`;
+  desktop.appendChild(el);
+  const win={id,name,el,old:null};
+  windows.set(id,win);
+  makeDraggable(win);
+  el.querySelector(".titlebar").addEventListener("dblclick",e=>{if(!e.target.closest("button"))el.querySelector("[data-max]").click();});
+  el.addEventListener("pointerdown",()=>focusWin(id));
+  el.querySelector("[data-close]").onclick=()=>closeWin(id);
+  el.querySelector("[data-min]").onclick=()=>el.classList.add("hidden");
+  el.querySelector("[data-max]").onclick=()=>{
+    if(win.old){Object.assign(el.style,win.old);win.old=null;}
+    else{win.old={left:el.style.left,top:el.style.top,width:el.style.width,height:el.style.height};Object.assign(el.style,{left:"5px",top:"5px",width:"calc(100% - 10px)",height:"calc(100% - 70px)"});}
+  };
+  addTask(win);
+  bindApp(win);
+  focusWin(id);
+}
+
+function focusWin(id){const w=windows.get(id);if(!w)return;w.el.style.zIndex=++z;document.querySelectorAll(".taskapp").forEach(b=>b.classList.toggle("on",b.id==="task-"+id));}
+function closeWin(id){const w=windows.get(id);if(!w)return;clearInterval(w.timer);w.el.remove();windows.delete(id);$("task-"+id)?.remove();}
+function addTask(w){const b=document.createElement("button");b.id="task-"+w.id;b.className="taskapp";b.textContent=w.name==="terminal"?"⌨️ Terminal":apps[w.name].icon+" "+apps[w.name].title;b.onclick=()=>{if(w.el.classList.contains("hidden"))w.el.classList.remove("hidden");focusWin(w.id);};$("taskapps").appendChild(b);}
+function makeDraggable(w){
+ const bar=w.el.querySelector(".titlebar");let start=null;
+ bar.addEventListener("pointerdown",e=>{
+  if(e.target.closest("button")||w.old)return;
+  start={x:e.clientX,y:e.clientY,l:w.el.offsetLeft,t:w.el.offsetTop};
+  bar.setPointerCapture(e.pointerId);
+ });
+ bar.addEventListener("pointermove",e=>{
+  if(!start)return;
+  w.el.style.left=Math.max(0,Math.min(innerWidth-w.el.offsetWidth,start.l+e.clientX-start.x))+"px";
+  w.el.style.top=Math.max(0,Math.min(innerHeight-80,start.t+e.clientY-start.y))+"px";
+ });
+ bar.addEventListener("pointerup",()=>start=null);
+ bar.addEventListener("pointercancel",()=>start=null);
+}
+
+function bindApp(w){
+ const root=w.el;
+ const q=s=>root.querySelector(s);
+
+ if(w.name==="terminal"){
+  const out=q("#termout"),form=q("#termform"),input=q("#terminput"),hist=[],names=["help","whoami","date","ls","pwd","clear","echo","about","apps","uptime","neofetch","cat","touch","rm","open","history"];let hi=0;
+  input.addEventListener("keydown",e=>{
+   if(e.key==="ArrowUp"&&hist.length){e.preventDefault();hi=Math.max(0,hi-1);input.value=hist[hi];}
+   else if(e.key==="ArrowDown"){e.preventDefault();hi=Math.min(hist.length,hi+1);input.value=hist[hi]||"";}
+   else if(e.key==="Tab"&&!input.value.includes(" ")){e.preventDefault();const m=names.filter(c=>c.startsWith(input.value));if(m.length===1)input.value=m[0]+" ";}
+  });
+  form.onsubmit=e=>{
+   e.preventDefault();const raw=input.value.trim();if(!raw)return;hist.push(raw);hi=hist.length;
+   const [cmd,...args]=raw.split(" "),arg=args.join(" ");
+   let result="";
+   const commands={
+    help:"Comandos: help, whoami, date, ls, pwd, clear, echo, about, apps, uptime, neofetch, cat <f>, touch <f>, rm <f>, open <app>, history\nTab autocompleta; ↑/↓ recorren el historial.",
+    whoami:"oyu",
+    date:new Date().toLocaleString("es-ES"),
+    ls:fileData.map(f=>f.name+(f.type==="Carpeta"?"/":"")).join("  ")||"(vacío)",
+    pwd:"/home/oyu",
+    about:"OyuOS — entorno de escritorio simulado en JavaScript.",
+    apps:Object.keys(apps).join("  "),
+    echo:arg,
+    uptime:"activo desde hace "+fmtUp(),
+    cat:(fileData.find(f=>f.name===arg)||{content:"cat: "+arg+": no existe"}).content,
+    neofetch:"oyu@oyuOS\n---------\nSO: OyuOS (simulado)\nResolución: "+screen.width+"×"+screen.height+"\nNúcleos: "+(navigator.hardwareConcurrency||"?")+"\nApps abiertas: "+windows.size
+   };
+   const act={
+    touch:()=>arg?(fileData.push({name:arg,type:"Texto",content:""}),saveFiles(),"Creado "+arg):"Uso: touch nombre",
+    rm:()=>{const i=fileData.findIndex(f=>f.name===arg);if(i<0)return"rm: "+arg+": no existe";fileData.splice(i,1);saveFiles();return"Eliminado "+arg;},
+    open:()=>apps[arg]?(openApp(arg),"Abriendo "+arg):"Uso: open <app> ("+Object.keys(apps).join(", ")+")",
+    history:()=>hist.map((c,i)=>(i+1)+"  "+c).join("\n")
+   };
+   if(cmd==="clear"){out.textContent="";input.value="";return;}
+   result=Object.hasOwn(act,cmd)?act[cmd]():Object.hasOwn(commands,cmd)?commands[cmd]:"Comando desconocido: "+cmd+". Escribe help.";
+   out.textContent+="$ "+raw+"\n"+result+"\n";
+   out.scrollTop=out.scrollHeight;input.value="";
+  };
+  setTimeout(()=>input.focus(),50);
+ }
+
+ if(w.name==="notes"){
+  const area=q("#notesarea");area.value=localStorage.getItem("oyuOS_notes")||"";
+  area.addEventListener("input",()=>{localStorage.setItem("oyuOS_notes",area.value);q("#notesstatus").textContent=" Guardado ✓";});
+  q("#savenotes").onclick=()=>{
+   localStorage.setItem("oyuOS_notes",area.value);
+   q("#notesstatus").textContent=" Guardado ✓";
+  };
+ }
+
+ if(w.name==="editor"){
+  const area=q("#editorarea");area.value=localStorage.getItem("oyuOS_code")||"";
+  area.addEventListener("input",()=>localStorage.setItem("oyuOS_code",area.value));
+  q("#savefile").onclick=()=>{if(w.cur==null||!fileData[w.cur]){alert("Abre primero un archivo desde el Explorador.");return;}fileData[w.cur].content=area.value;saveFiles();alert("Archivo guardado.");};
+  q("#runprev").onclick=()=>{const f=q("#prevframe");f.srcdoc=area.value;f.classList.toggle("hidden");};
+  q("#downloadcode").onclick=()=>{
+   const blob=new Blob([area.value],{type:"text/plain;charset=utf-8"});
+   const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+   a.download="mi-codigo.txt";a.click();URL.revokeObjectURL(a.href);
+  };
+ }
+
+ if(w.name==="files"){
+  let sel=-1;const pv=q("#filepreview");
+  const draw=()=>{q("#flist").innerHTML=fileData.map((f,i)=>`<button class="fileitem" data-file="${i}">${f.type==="Carpeta"?"📂":"📄"}<br>${esc(f.name)}</button>`).join("");
+   root.querySelectorAll("[data-file]").forEach(b=>b.onclick=()=>{sel=Number(b.dataset.file);const f=fileData[sel];pv.textContent=f.type==="Carpeta"?"Carpeta virtual de demostración.":f.content;q("#openfile").disabled=f.type==="Carpeta";q("#delfile").disabled=false;});};
+  draw();
+  q("#newfile").onclick=()=>{const n=(prompt("Nombre del archivo:")||"").trim().slice(0,60);if(!n)return;fileData.push({name:n,type:"Texto",content:""});saveFiles();draw();};
+  q("#delfile").onclick=()=>{if(sel<0||!confirm("¿Eliminar "+fileData[sel].name+"?"))return;fileData.splice(sel,1);sel=-1;saveFiles();draw();pv.textContent="";q("#delfile").disabled=q("#openfile").disabled=true;};
+  q("#openfile").onclick=()=>{if(sel<0)return;openApp("editor");const ed=[...windows.values()].find(x=>x.name==="editor");ed.el.querySelector("#editorarea").value=fileData[sel].content;ed.cur=sel;};
+ }
+
+ if(w.name==="calc"){
+  const d=q("#calcdisplay");let expr="";
+  root.querySelectorAll("[data-calc]").forEach(b=>b.onclick=()=>{
+   const k=b.dataset.calc;
+   if(k==="C"){expr="";d.value="0";return;}
+   if(k==="⌫"){expr=expr.slice(0,-1);d.value=expr||"0";return;}
+   if(k==="="){
+    try{
+     const safe=expr.replace(/×/g,"*").replace(/÷/g,"/");
+     if(!safe||!/^[0-9+\-*/().\s]+$/.test(safe))throw Error();
+     const result=Function('"use strict";return ('+safe+')')();
+     if(!Number.isFinite(result))throw Error();
+     expr=String(Number(result.toFixed(8)));d.value=expr;
+    }catch{d.value="Error";expr="";}
+    return;
+   }
+   const chars={"×":"*","÷":"/","−":"-"};
+   expr+=(chars[k]||k);d.value=expr;
+  });
+ }
+
+ if(w.name==="todo"){
+  let t;try{t=JSON.parse(localStorage.getItem("oyuOS_todo"));}catch{}if(!Array.isArray(t))t=[];
+  const list=q("#todolist"),save=()=>localStorage.setItem("oyuOS_todo",JSON.stringify(t));
+  const draw=()=>{list.innerHTML=t.length?t.map((x,i)=>`<div class="todo${x.d?" done":""}"><input type="checkbox" data-t="${i}" ${x.d?"checked":""} aria-label="Completada"><span>${esc(x.t)}</span><button data-x="${i}" aria-label="Borrar">×</button></div>`).join(""):'<p class="muted">Sin tareas. ¡Añade la primera!</p>';
+   list.querySelectorAll("[data-t]").forEach(c=>c.onchange=()=>{t[c.dataset.t].d=c.checked;save();draw();});
+   list.querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>{t.splice(b.dataset.x,1);save();draw();});};
+  q("#todoform").onsubmit=e=>{e.preventDefault();const i=q("#todoinput"),v=i.value.trim().slice(0,120);if(!v)return;t.push({t:v,d:false});i.value="";save();draw();};
+  draw();
+ }
+
+ if(w.name==="monitor"){
+  const update=()=>{if(!windows.has(w.id))return;q("#openwindows").textContent=windows.size;q("#notesize").textContent=(localStorage.getItem("oyuOS_notes")||"").length;q("#sysclock").textContent=new Date().toLocaleTimeString("es-ES");q("#uptime").textContent=fmtUp();q("#net").textContent=navigator.onLine?"en línea":"sin conexión";};
+  update();w.timer=setInterval(update,1000);
+ }
+
+ if(w.name==="settings"){
+  q("#accent").value=localStorage.getItem("oyuOS_accent")||"#54a6ff";
+  q("#accent").oninput=e=>{document.documentElement.style.setProperty("--accent",e.target.value);localStorage.setItem("oyuOS_accent",e.target.value);};
+  q("#wallpaper").onclick=()=>{const n=Math.floor(Math.random()*3);localStorage.setItem("oyuOS_wall",n);desktop.style.background=["radial-gradient(ellipse at 20% 20%,#1c4971,transparent 48%),#101827","radial-gradient(ellipse at 80% 20%,#49306d,transparent 50%),#101827","radial-gradient(ellipse at 50% 90%,#15554e,transparent 55%),#101827"][n];};
+  q("#resetstyle").onclick=()=>{localStorage.removeItem("oyuOS_accent");localStorage.removeItem("oyuOS_wall");location.reload();};
+ }
+
+ if(w.name==="about"){
+  q("#openportfolio").onclick=()=>window.open("https://github.com/","_blank","noopener,noreferrer");
+ }
+}
+
+document.querySelectorAll("[data-app]").forEach(b=>b.addEventListener("click",()=>openApp(b.dataset.app)));
+$("start").onclick=()=>$("startmenu").classList.toggle("hidden");
+document.addEventListener("click",e=>{if(!e.target.closest("#startmenu")&&!e.target.closest("#start"))$("startmenu").classList.add("hidden");});
+function clock(){const d=new Date();$("clock").innerHTML=d.toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"})+"<br><small>"+d.toLocaleDateString("es-ES")+"</small>";}
+document.documentElement.style.setProperty("--accent",localStorage.getItem("oyuOS_accent")||"#54a6ff");
+const WALLS=["radial-gradient(ellipse at 20% 20%,#1c4971,transparent 48%),#101827","radial-gradient(ellipse at 80% 20%,#49306d,transparent 50%),#101827","radial-gradient(ellipse at 50% 90%,#15554e,transparent 55%),#101827"];
+const wn=localStorage.getItem("oyuOS_wall");if(WALLS[wn])desktop.style.background=WALLS[wn];
+document.addEventListener("keydown",e=>{
+ if(e.key==="Escape")$("startmenu").classList.add("hidden");
+ if(e.altKey&&!e.ctrlKey){
+  const k=e.key.toLowerCase(),m={t:"terminal",n:"notes",e:"editor",c:"calc",m:"monitor"}[k];
+  if(m){e.preventDefault();openApp(m);}
+  if(k==="w"){e.preventDefault();const top=[...windows.values()].sort((a,b)=>b.el.style.zIndex-a.el.style.zIndex)[0];if(top)closeWin(top.id);}
+ }
+});
+clock();setInterval(clock,1000);
+</script>
+</body>
+</html>
